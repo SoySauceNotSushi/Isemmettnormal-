@@ -405,7 +405,7 @@
       <div class="owner-avatar" style="background:#00b4b4">J</div>
       <span class="owner-name" style="color:#00b4b4">Jy</span>
     </div>
-    <div class="card-finding">Carrying out a normality quiz.<br><span style="color:#00c48c;font-style:normal;font-weight:500;">Complete normalcy 😉</span></div>
+    <div class="card-finding">Carrying out a normality quiz.<br><span style="color:#00c48c;font-style:normal;font-weight:500;">Complete normalcy</span></div>
     <div class="card-bottom" style="margin-top:10px;">
       <div class="card-pct" style="color:#00c48c;font-size:20px;width:auto;flex-shrink:0;">100%</div>
       <div class="bar-track"><div class="bar-fill" id="absurdityBar" style="background:#00c48c" data-pct="100"></div></div>
@@ -456,7 +456,7 @@
   <div class="footer-badge" id="footerBadge">
     <span>Presented to</span>
     <span class="ha-logo"><span class="ha-dot"></span>Hostaway</span>
-    <span>· Results certified by nobody</span>
+    <span>· Results certified by Claude AI</span>
   </div>
 </div>
 
@@ -517,7 +517,13 @@ const categories = [
 const emmettAvg = Math.round(categories.reduce((s, c) => s + c.emmett.pct, 0) / categories.length);
 const jyAvg     = Math.round(categories.reduce((s, c) => s + c.jy.pct, 0) / categories.length);
 
-function getVerdict(pct) {
+function getVerdict(pct, name) {
+  if (name === 'jy') {
+    if (pct < 30) return "Genuinely alarming. In the best way.";
+    if (pct < 50) return "Not quite normal, but quirky.";
+    if (pct < 65) return "Quirky with real flashes of normalcy.";
+    return "Actually pretty normal. Mostly.";
+  }
   if (pct < 30) return "Genuinely alarming. In the best way.";
   if (pct < 50) return "Delightfully odd. We like him.";
   if (pct < 65) return "Quirky with real flashes of normalcy.";
@@ -616,7 +622,6 @@ function startFlow() {
   setTimeout(() => {
     const totals = document.getElementById('totalsSection');
     totals.classList.add('show');
-    totals.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     setTimeout(() => {
       // Both get real scores
@@ -626,8 +631,8 @@ function startFlow() {
       countUp('jyTotal', jyAvg);
 
       setTimeout(() => {
-        document.getElementById('emmettVerdict').textContent = getVerdict(emmettAvg);
-        document.getElementById('jyVerdict').textContent = getVerdict(jyAvg);
+        document.getElementById('emmettVerdict').textContent = getVerdict(emmettAvg, 'emmett');
+        document.getElementById('jyVerdict').textContent = getVerdict(jyAvg, 'jy');
       }, 1400);
     }, 600);
 
