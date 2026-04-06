@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Normality Test — Emmett Conroy</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #0f2035;
+    --coral:  #ff6b4a;
+    --coral2: #ff8566;
+    --teal:   #00b4b4;
+    --white:  #ffffff;
+    --off:    #f7f8fc;
+    --border: #e4e8f0;
+    --ink:    #1a2b3c;
+    --muted:  #7a8fa6;
+    --green:  #00c48c;
+    --warn:   #ffb547;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--off);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 85%, rgba(0,180,180,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 85% 15%, rgba(255,107,74,0.06) 0%, transparent 50%);
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 32px),
+      repeating-linear-gradient(-45deg, rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 32px);
+  }
+
+  .hero-inner { position: relative; z-index: 1; }
+
+  .hero h1 {
+    font-size: clamp(40px, 10vw, 80px);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--navy);
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+  .hero h1 em { font-style: normal; color: var(--coral); }
+
+  .hero-sub {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--muted);
+    max-width: 360px;
+    line-height: 1.65;
+    margin: 0 auto 36px;
+  }
+
+  .test-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,180,180,0.08);
+    border: 1px solid rgba(0,180,180,0.25);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 32px;
+    font-family: monospace;
+  }
+
+  .subjects {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .subject-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+  }
+
+  .subject-avatar {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+
+  .vs {
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 2px; align-self: center;
+  }
+
+  .blink {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--teal);
+    border-radius: 2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .start-btn {
+    background: var(--coral);
+    color: #fff; border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px; font-weight: 600;
+    padding: 16px 44px;
+    border-radius: 12px; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    box-shadow: 0 4px 24px rgba(255,107,74,0.35);
+  }
+  .start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,107,74,0.45); background: var(--coral2); }
+  .start-btn:active { transform: translateY(0); }
+
+  /* ─── RESULTS ─── */
+  .results { display: none; max-width: 620px; margin: 0 auto; padding: 48px 20px 80px; }
+  .results.active { display: block; }
+
+  .test-header {
+    background: var(--navy);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 28px;
+    display: flex; align-items: center; gap: 12px;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .test-header.show { opacity: 1; }
+
+  .test-dot {
+    width: 10px; height: 10px;
+    background: var(--teal); border-radius: 50%; flex-shrink: 0;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,180,180,0.4); }
+    50% { opacity:0.7; box-shadow: 0 0 0 6px rgba(0,180,180,0); }
+  }
+
+  .test-header-text {
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    font-family: monospace; letter-spacing: 0.5px;
+  }
+  .test-header-text strong { color: var(--teal); font-weight: 700; }
+
+  /* ─── TOPIC BLOCK ─── */
+  .topic-block { margin-bottom: 24px; }
+
+  .topic-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--navy); color: var(--white);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 100px; margin-bottom: 10px;
+  }
+  .topic-pill .dot { width: 5px; height: 5px; background: var(--teal); border-radius: 50%; }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px 16px;
+    margin-bottom: 8px;
+    opacity: 0; transform: translateY(18px);
+    transition: opacity 0.38s ease, transform 0.38s ease;
+    box-shadow: 0 1px 4px rgba(15,32,53,0.05);
+  }
+  .card.show { opacity: 1; transform: translateY(0); }
+
+  .card-owner-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+
+  .owner-avatar {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+
+  .owner-name { font-size: 12px; font-weight: 600; }
+
+  .card-finding {
+    font-size: 14px; font-weight: 400;
+    line-height: 1.6; color: #4a5f75; margin-bottom: 13px;
+  }
+
+  .card-bottom { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+
+  .card-pct { font-size: 26px; font-weight: 700; line-height: 1; flex-shrink: 0; min-width: 54px; }
+
+  .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; width: 0; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+
+  .badge {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 6px; flex-shrink: 0;
+  }
+
+  /* ─── TOTALS ─── */
+  .totals-section {
+    background: var(--navy);
+    border-radius: 20px; padding: 32px 24px;
+    margin-top: 32px;
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    position: relative; overflow: hidden;
+  }
+  .totals-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 10% 90%, rgba(0,180,180,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 90% 10%, rgba(255,107,74,0.08) 0%, transparent 50%);
+  }
+  .totals-section.show { opacity: 1; transform: translateY(0); }
+
+  .totals-label {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    text-align: center; margin-bottom: 20px; position: relative;
+  }
+
+  .totals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; position: relative; }
+
+  .total-card {
+    border-radius: 12px; padding: 22px 16px; text-align: center;
+  }
+  .total-card.emmett { background: rgba(255,107,74,0.12); border: 1px solid rgba(255,107,74,0.2); }
+  .total-card.jy     { background: rgba(255,107,74,0.06); border: 1px solid rgba(255,107,74,0.15); }
+
+  .total-who { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; }
+  .total-avatar {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+  .total-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); }
+
+  .total-score {
+    font-size: clamp(44px,11vw,68px);
+    font-weight: 700; line-height: 1; margin-bottom: 10px;
+  }
+  .total-card.emmett .total-score { color: var(--coral); }
+  .total-card.jy     .total-score { color: var(--teal); }
+
+  .total-bar-wrap { background: rgba(255,255,255,0.08); height: 5px; border-radius: 100px; overflow: hidden; margin-bottom: 8px; }
+  .total-bar-fill { height: 100%; border-radius: 100px; width: 0; transition: width 1.8s cubic-bezier(0.16,1,0.3,1); }
+
+  .total-verdict { font-size: 11px; font-weight: 300; font-style: italic; color: rgba(255,255,255,0.4); line-height: 1.4; }
+
+  /* ─── ABSURDITY CARD ─── */
+  .absurdity-block {
+    background: var(--navy);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .absurdity-block.show { opacity: 1; transform: translateY(0); }
+
+  .absurdity-left { flex: 1; }
+
+  .absurdity-topic {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 4px;
+  }
+
+  .absurdity-sub {
+    font-size: 12px;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.5;
+  }
+
+  .absurdity-right { text-align: right; flex-shrink: 0; }
+
+  .absurdity-pct {
+    font-size: 52px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--coral);
+  }
+
+  .absurdity-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--coral);
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  /* ─── VERDICT ─── */
+  .verdict-block {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px 24px;
+    text-align: center; margin-top: 14px;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    box-shadow: 0 1px 4px rgba(15,32,53,0.06);
+  }
+  .verdict-block.show { opacity: 1; transform: translateY(0); }
+
+  .verdict-icon { font-size: 40px; margin-bottom: 14px; }
+  .verdict-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 12px; line-height: 1.3; }
+  .verdict-title em { font-style: normal; color: var(--coral); }
+  .verdict-body { font-size: 14px; font-weight: 300; color: var(--muted); line-height: 1.7; max-width: 440px; margin: 0 auto 20px; }
+  .verdict-wink {
+    display: inline-block; background: var(--navy); color: var(--white);
+    font-size: 13px; font-weight: 600; padding: 10px 24px;
+    border-radius: 100px;
+  }
+
+  /* ─── FOOTER ─── */
+  .footer-badge {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-top: 36px;
+    opacity: 0; transition: opacity 0.5s;
+  }
+  .footer-badge.show { opacity: 1; }
+  .footer-badge span { font-size: 11px; color: var(--muted); }
+  .ha-logo { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--navy); }
+  .ha-dot { width: 7px; height: 7px; background: var(--coral); border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="test-badge"><span class="blink"></span>Normality Test v1.0</div>
+    <h1>Running a<br>normality test<br>on <em>Emmett.</em></h1>
+    <p class="hero-sub">Nine categories. Two people. Results may be disturbing.</p>
+    <button class="start-btn" onclick="startFlow()">Run test →</button>
+  </div>
+</div>
+
+<div class="results" id="results">
+  <div class="test-header" id="testHeader">
+    <div class="test-dot"></div>
+    <div class="test-header-text">
+      <strong>NORMALITY_TEST.exe</strong> — running analysis across 9 categories&hellip;
+    </div>
+  </div>
+
+  <div id="topicContainer"></div>
+
+  <div class="card" id="absurdityBlock" style="margin-bottom:12px; opacity:0; transform:translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="card-owner-row">
+      <div class="owner-avatar" style="background:#00b4b4">J</div>
+      <span class="owner-name" style="color:#00b4b4">Jy</span>
+    </div>
+    <div class="card-finding">Carrying out a normality quiz.<br><span style="color:#00c48c;font-style:normal;font-weight:500;">Complete normalcy 😉</span></div>
+    <div class="card-bottom" style="margin-top:10px;">
+      <div class="card-pct" style="color:#00c48c;font-size:20px;width:auto;flex-shrink:0;">100%</div>
+      <div class="bar-track"><div class="bar-fill" id="absurdityBar" style="background:#00c48c" data-pct="100"></div></div>
+    </div>
+  </div>
+
+  <div class="totals-section" id="totalsSection">
+    <p class="totals-label">Final Test Results</p>
+    <div class="totals-grid">
+      <div class="total-card emmett">
+        <div class="total-who">
+          <div class="total-avatar" style="background:#ff6b4a">E</div>
+          <span class="total-name">Emmett</span>
+        </div>
+        <div class="total-score" id="emmettTotal">0%</div>
+        <div class="total-bar-wrap"><div class="total-bar-fill" id="emmettBar" style="background:#ff6b4a"></div></div>
+        <p class="total-verdict" id="emmettVerdict"></p>
+      </div>
+      <div class="total-card jy">
+        <div class="total-who">
+          <div class="total-avatar" style="background:#00b4b4">J</div>
+          <span class="total-name">Jy</span>
+        </div>
+        <div class="total-score" id="jyTotal">0%</div>
+        <div class="total-bar-wrap"><div class="total-bar-fill" id="jyBar" style="background:#00b4b4"></div></div>
+        <p class="total-verdict" id="jyVerdict"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict-block" id="verdictBlock">
+    <div class="verdict-icon">🧪</div>
+    <p class="verdict-title">Test complete.<br><em>Pretty normal to me 😉</em></p>
+    <p class="verdict-body">One born on a cursed Friday, one on a perfectly average Monday. One from a county no one can locate, one from a rock 32,000 people call home. Both juggled. Both self-taught a language through music. Completely, utterly, undeniably normal.</p>
+  </div>
+
+  <div class="absurdity-block" id="absurdityBlock">
+    <div class="absurdity-left">
+      <div class="absurdity-topic">Carrying out this normality test</div>
+      <div class="absurdity-sub">Designing a full interactive scored breakdown to prepare for a job interview. With Hostaway branding. At 11pm.</div>
+    </div>
+    <div class="absurdity-right">
+      <div class="absurdity-pct">0%</div>
+      <div class="absurdity-label">Complete absurdity</div>
+    </div>
+  </div>
+
+  <div class="footer-badge" id="footerBadge">
+    <span>Presented to</span>
+    <span class="ha-logo"><span class="ha-dot"></span>Hostaway</span>
+    <span>· Results certified by nobody</span>
+  </div>
+</div>
+
+<script>
+const CORAL = '#ff6b4a';
+const TEAL  = '#00b4b4';
+const WARN  = '#ffb547';
+const GREEN = '#00c48c';
+
+const categories = [
+  {
+    topic: "Birthday",
+    emmett: { finding: "Friday the 13th — also Good Friday. He calls it 'normal.' A Good Friday on the 13th happens roughly once every 300 years.", pct: 8, color: CORAL },
+    jy:     { finding: "Monday the 13th of July. Boringly average. Though still subject to Friday the 13th's — a 12/365 chance. Not that normal.", pct: 65, color: TEAL }
+  },
+  {
+    topic: "Birthplace",
+    emmett: { finding: "The only Irish county not touching a county that touches the sea. Also citing a 1915 hurling final. That was 111 years ago.", pct: 40, color: WARN },
+    jy:     { finding: "Born in Gibraltar. 32,000 people. 6.8 km² — not a county, not an island. So small his mum parties with girls he used to go out with as a teenager.", pct: 25, color: CORAL }
+  },
+  {
+    topic: "Family",
+    emmett: { finding: "Youngest of 4, born 10 years after the next sibling. Calls himself 'an accident.' Has come to terms with it. Concerningly calm. The fact he put this in a portfolio used for employment — unhinged.", pct: 22, color: CORAL },
+    jy:     { finding: "Mum had him at 18, dad at 19. Confirmed NOT an accident — he asked. Delivered 3 weeks late. One more second and could have died. His sister was his birthday present.", pct: 16, color: CORAL }
+  },
+  {
+    topic: "Sports",
+    emmett: { finding: "Called MUTV as a kid with tactical advice. Man United won. Takes partial credit. Confidence level: alarming.", pct: 28, color: CORAL },
+    jy:     { finding: "International athlete for Gibraltar. Sounds impressive, but then you remember Gibraltar is made of 32,000 people and we always come last.", pct: 42, color: WARN }
+  },
+  {
+    topic: "Music",
+    emmett: { finding: "Would time-travel to 1520 Sedgwick Ave, August 11 1973 — the exact birth of hip hop. The address. The date. Most people say 'a bit of everything.'", pct: 10, color: CORAL },
+    jy:     { finding: "Top artist: 2Pac. 'He sang it how it was.' Perfectly normal taste. Nothing to see here.", pct: 75, color: TEAL }
+  },
+  {
+    topic: "Juggling",
+    emmett: { finding: "Active juggler. Recited 5 unprompted scientific benefits of juggling. Normal people do not have juggling facts on standby.", pct: 18, color: CORAL },
+    jy:     { finding: "Tried to learn juggling but quickly moved on to the diavolo, trompo, and Rubik's cube instead.", pct: 22, color: CORAL }
+  },
+  {
+    topic: "Languages",
+    emmett: { finding: "Self-taught Spanish through South American song lyrics. Speaks better after a few beers. Chaotic method, impressive result.", pct: 62, color: TEAL },
+    jy:     { finding: "Born bilingual in English and Spanish. Learnt Portuguese at 21, largely through music. Three languages, one acquired via playlist.", pct: 45, color: WARN }
+  },
+  {
+    topic: "Reading",
+    emmett: { finding: "Favourite as a kid: The Twits. Factual favourite: Tom Crean, Antarctic explorer. Solid range. Normal in the best way.", pct: 75, color: GREEN },
+    jy:     { finding: "Read a book every 1–2 nights as a kid. Stayed up until 11pm reading The Faraway Tree. Normal kids want TV. This kid wanted chapters.", pct: 58, color: TEAL }
+  },
+  {
+    topic: "Claims to Fame",
+    emmett: { finding: "Charity football winner. Coca-Cola campaign. Appeared on Google Maps in London — twice. The Google Maps one requires further investigation.", pct: 35, color: WARN },
+    jy:     { finding: "Represented Gibraltar internationally. Climbed Kilimanjaro for charity.", pct: 60, color: TEAL }
+  }
+];
+
+const emmettAvg = Math.round(categories.reduce((s, c) => s + c.emmett.pct, 0) / categories.length);
+const jyAvg     = Math.round(categories.reduce((s, c) => s + c.jy.pct, 0) / categories.length);
+
+function getVerdict(pct) {
+  if (pct < 30) return "Genuinely alarming. In the best way.";
+  if (pct < 50) return "Delightfully odd. We like him.";
+  if (pct < 65) return "Quirky with real flashes of normalcy.";
+  return "Actually pretty normal. Mostly.";
+}
+
+function countUp(elId, target) {
+  let n = 0;
+  const el = document.getElementById(elId);
+  const iv = setInterval(() => {
+    n = Math.min(n + 1, target);
+    el.textContent = n + '%';
+    if (n >= target) clearInterval(iv);
+  }, 1200 / Math.max(target, 1));
+}
+
+function startFlow() {
+  document.getElementById('hero').style.display = 'none';
+  document.getElementById('results').classList.add('active');
+  window.scrollTo({ top: 0 });
+
+  setTimeout(() => document.getElementById('testHeader').classList.add('show'), 150);
+
+  const container = document.getElementById('topicContainer');
+  let delay = 280;
+
+  categories.forEach((cat, i) => {
+    const block = document.createElement('div');
+    block.className = 'topic-block';
+
+    // Topic pill
+    const pill = document.createElement('div');
+    pill.className = 'topic-pill';
+    pill.innerHTML = `<span class="dot"></span>${cat.topic}`;
+    block.appendChild(pill);
+
+    // Emmett card
+    const eCard = document.createElement('div');
+    eCard.className = 'card';
+    eCard.id = `e-${i}`;
+    eCard.innerHTML = `
+      <div class="card-owner-row">
+        <div class="owner-avatar" style="background:#ff6b4a">E</div>
+        <span class="owner-name" style="color:#ff6b4a">Emmett</span>
+      </div>
+      <div class="card-finding">${cat.emmett.finding}</div>
+      <div class="card-bottom">
+        <div class="card-pct" style="color:${cat.emmett.color}">${cat.emmett.pct}%</div>
+        <div class="bar-track"><div class="bar-fill" style="background:${cat.emmett.color}" data-pct="${cat.emmett.pct}"></div></div>
+      </div>`;
+    block.appendChild(eCard);
+
+    // Jy card — real scores, normal styling
+    const jCard = document.createElement('div');
+    jCard.className = 'card';
+    jCard.id = `j-${i}`;
+    jCard.innerHTML = `
+      <div class="card-owner-row">
+        <div class="owner-avatar" style="background:#00b4b4">J</div>
+        <span class="owner-name" style="color:#00b4b4">Jy</span>
+      </div>
+      <div class="card-finding">${cat.jy.finding}</div>
+      <div class="card-bottom">
+        <div class="card-pct" style="color:${cat.jy.color}">${cat.jy.pct}%</div>
+        <div class="bar-track"><div class="bar-fill" style="background:${cat.jy.color}" data-pct="${cat.jy.pct}"></div></div>
+      </div>`;
+    block.appendChild(jCard);
+
+    container.appendChild(block);
+
+    // Animate Emmett card
+    setTimeout(() => {
+      const ec = document.getElementById(`e-${i}`);
+      ec.classList.add('show');
+      setTimeout(() => ec.querySelector('.bar-fill').style.width = cat.emmett.pct + '%', 80);
+    }, delay);
+    delay += 360;
+
+    // Animate Jy card
+    setTimeout(() => {
+      const jc = document.getElementById(`j-${i}`);
+      jc.classList.add('show');
+      setTimeout(() => jc.querySelector('.bar-fill').style.width = cat.jy.pct + '%', 80);
+    }, delay);
+    delay += 480;
+  });
+
+  // Absurdity card then totals
+  setTimeout(() => {
+    const ab = document.getElementById('absurdityBlock');
+    ab.style.opacity = '1';
+    ab.style.transform = 'translateY(0)';
+    setTimeout(() => document.getElementById('absurdityBar').style.width = '100%', 80);
+  }, delay + 200);
+
+  setTimeout(() => {
+    const totals = document.getElementById('totalsSection');
+    totals.classList.add('show');
+    totals.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(() => {
+      // Both get real scores
+      document.getElementById('emmettBar').style.width = emmettAvg + '%';
+      document.getElementById('jyBar').style.width = jyAvg + '%';
+      countUp('emmettTotal', emmettAvg);
+      countUp('jyTotal', jyAvg);
+
+      setTimeout(() => {
+        document.getElementById('emmettVerdict').textContent = getVerdict(emmettAvg);
+        document.getElementById('jyVerdict').textContent = getVerdict(jyAvg);
+      }, 1400);
+    }, 600);
+
+    setTimeout(() => document.getElementById('verdictBlock').classList.add('show'), 2800);
+    setTimeout(() => document.getElementById('footerBadge').classList.add('show'), 3300);
+  }, delay + 900);
+}
+</script>
+</body>
+</html>
